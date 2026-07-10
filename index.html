@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FinOps Cost Assistant</title>
+<style>
+  :root {
+    --bg: #0B0F14;
+    --panel: #12181F;
+    --border: #232C36;
+    --text: #E6EDF3;
+    --muted: #8B98A5;
+    --accent: #3FB68B;
+    --warn: #E8A33D;
+    --mono: "SF Mono", "Cascadia Code", Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    padding: 28px 20px 40px;
+  }
+  .wrap { max-width: 780px; margin: 0 auto; height: calc(100vh - 68px); display: flex; flex-direction: column; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+
+  .config-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .config-bar input {
+    flex: 1;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 11px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .config-bar button {
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #1A222B;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .config-bar button:hover { border-color: var(--accent); }
+
+  #chat {
+    flex: 1;
+    overflow-y: auto;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .msg { max-width: 82%; }
+  .msg.user { align-self: flex-end; }
+  .msg.bot { align-self: flex-start; }
+  .bubble {
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+  .msg.user .bubble { background: var(--accent); color: #05130D; border-bottom-right-radius: 3px; }
+  .msg.bot .bubble { background: #1A222B; border: 1px solid var(--border); color: var(--text); border-bottom-left-radius: 3px; }
+  .msg.bot .bubble.error { border-color: #FF6B6B; color: #FF6B6B; }
+
+  .sources {
+    margin-top: 6px;
+    font-size: 10.5px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+  .sources a { color: #5AB0FF; text-decoration: none; display: block; margin-top: 2px; }
+  .sources a:hover { text-decoration: underline; }
+
+  .typing { font-size: 12.5px; color: var(--muted); font-style: italic; padding: 2px 4px; }
+
+  .input-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .input-row textarea {
+    flex: 1;
+    resize: none;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 14px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13.5px;
+    height: 48px;
+  }
+  .input-row textarea:focus { outline: 1px solid var(--accent); border-color: var(--accent); }
+  .input-row button {
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    padding: 0 20px;
+    border-radius: 10px;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #05130D;
+    cursor: pointer;
+  }
+  .input-row button:hover { filter: brightness(1.08); }
+  .input-row button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .empty-hint {
+    color: var(--muted);
+    font-size: 12.5px;
+    text-align: center;
+    margin: auto;
+    max-width: 380px;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow">FinOps Demo &middot; Bedrock Knowledge Base</div>
+  <h1>Cost Assistant</h1>
+  <div class="subtitle">Ask about your CUR, Trusted Advisor, Budget, and CloudWatch data — answered live from your Bedrock Knowledge Base.</div>
+
+  <div class="config-bar">
+    <input type="text" id="apiUrl" placeholder="API endpoint, e.g. https://xp239xjhzd.execute-api.us-east-1.amazonaws.com/ask" value="https://xp239xjhzd.execute-api.us-east-1.amazonaws.com/ask">
+    <button onclick="saveEndpoint()">Save</button>
+  </div>
+
+  <div id="chat">
+    <div class="empty-hint" id="emptyHint">
+      Try asking: "Which resources are flagged as wasteful?" or "How does this month's spend compare to budget?"
+    </div>
+  </div>
+
+  <div class="input-row">
+    <textarea id="questionInput" placeholder="Ask a question about your cloud costs..."></textarea>
+    <button id="sendBtn" onclick="sendQuestion()">Send</button>
+  </div>
+
+</div>
+
+<script>
+function saveEndpoint() {
+  const url = document.getElementById("apiUrl").value.trim();
+  localStorage.setItem("finops_api_url", url);
+}
+function loadEndpoint() {
+  const saved = localStorage.getItem("finops_api_url");
+  if (saved) document.getElementById("apiUrl").value = saved;
+}
+loadEndpoint();
+
+const chatEl = document.getElementById("chat");
+const inputEl = document.getElementById("questionInput");
+const sendBtn = document.getElementById("sendBtn");
+
+function clearEmptyHint() {
+  const hint = document.getElementById("emptyHint");
+  if (hint) hint.remove();
+}
+
+function addMessage(text, sender, sources, isError) {
+  clearEmptyHint();
+  const msg = document.createElement("div");
+  msg.className = "msg " + sender;
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble" + (isError ? " error" : "");
+  bubble.textContent = text;
+  msg.appendChild(bubble);
+
+  if (sources && sources.length) {
+    const uniqueSources = [...new Set(sources)];
+    const srcDiv = document.createElement("div");
+    srcDiv.className = "sources";
+    srcDiv.innerHTML = "Sources:" + uniqueSources.map(s =>
+      `<a href="${s}" target="_blank">${s.split("/").pop()}</a>`
+    ).join("");
+    msg.appendChild(srcDiv);
+  }
+
+  chatEl.appendChild(msg);
+  chatEl.scrollTop = chatEl.scrollHeight;
+  return msg;
+}
+
+function addTyping() {
+  const el = document.createElement("div");
+  el.className = "msg bot";
+  el.id = "typingIndicator";
+  el.innerHTML = `<div class="typing">Thinking...</div>`;
+  chatEl.appendChild(el);
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+function removeTyping() {
+  const el = document.getElementById("typingIndicator");
+  if (el) el.remove();
+}
+
+async function sendQuestion() {
+  const question = inputEl.value.trim();
+  const apiUrl = document.getElementById("apiUrl").value.trim();
+
+  if (!question) return;
+  if (!apiUrl) {
+    addMessage("Please enter your API endpoint above first.", "bot", null, true);
+    return;
+  }
+
+  addMessage(question, "user");
+  inputEl.value = "";
+  sendBtn.disabled = true;
+  addTyping();
+
+  try {
+    const res = await fetch(apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question })
+    });
+
+    const data = await res.json();
+    removeTyping();
+
+    if (!res.ok || data.error) {
+      addMessage(data.error || `Request failed (${res.status})`, "bot", null, true);
+    } else {
+      addMessage(data.answer, "bot", data.sources);
+    }
+  } catch (err) {
+    removeTyping();
+    addMessage("Network error: " + err.message, "bot", null, true);
+  } finally {
+    sendBtn.disabled = false;
+    inputEl.focus();
+  }
+}
+
+inputEl.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendQuestion();
+  }
+});
+</script>
+</body>
+</html>
