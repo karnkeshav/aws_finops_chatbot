@@ -286,7 +286,7 @@
   </div>
   <main class="chat-main">
     <div class="chat-scroll" id="chat-oci">
-      <div class="empty-hint" id="emptyHint-oci">OCI backend is still being built — set its endpoint via the gear icon once it's deployed. Try: "What's the total cost this month?"</div>
+      <div class="empty-hint" id="emptyHint-oci">Try: "What's the total potential savings?" · "Show me a chart of cost by service" · "Flowchart of recommendations by importance"</div>
     </div>
   </main>
   <footer class="chat-input">
@@ -302,7 +302,7 @@
 // ---------- Default endpoints ----------
 const DEFAULT_ENDPOINTS = {
   aws: "https://xp239xjhzd.execute-api.us-east-1.amazonaws.com/ask",
-  oci: ""   // set once the OCI Function + API Gateway route is deployed
+  oci: "https://129-225-111-42.sslip.io/ask"
 };
 
 function loadEndpoint(provider) {
