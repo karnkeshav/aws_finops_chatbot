@@ -610,6 +610,35 @@ function getGcpLocalFallback(question) {
       sources: ["gs://cloud-finops-vault-464514/finops_samples/gcp_detailed_billing_export_sample.csv", "gs://cloud-finops-vault-464514/finops_samples/gcp_cloud_monitoring_metrics_sample.csv"]
     };
   }
+  if (q.includes("flowchart") || q.includes("diagram") || q.includes("mermaid") || q.includes("workflow") || q.includes("step")) {
+    return {
+      answer: "Google Cloud Active Assist Remediation & Rightsizing Workflow:",
+      diagram: {
+        type: "mermaid",
+        code: `graph TD
+    A[GCP Active Assist / BigQuery Billing Alert] --> B{Resource Category}
+    B -->|Compute Engine VM| C[Analyze Cloud Monitoring CPU Utilization < 5%]
+    B -->|Persistent Disk| D[Verify 0 Disk IOPS for 14 Days]
+    B -->|Cloud Storage / GCS| E[Check Coldline / Archive Lifecycle Policy]
+    B -->|Cloud SQL Database| F[Evaluate 1-Yr / 3-Yr Committed Use Discount CUD]
+
+    C -->|Development Instance| G[Execute gcloud compute instances stop]
+    C -->|Production Workload| H[Downsize Machine Type e.g. e2-standard-4 to e2-small]
+
+    D --> I[Create Final Snapshot & Delete Unattached Disk]
+    E --> J[Apply GCS Auto-Tiering Rule to Nearline/Coldline]
+    F --> K[Purchase Compute/Database CUD via Billing Console]
+
+    G --> L[Stream Update to BigQuery Detailed Billing Export]
+    H --> L
+    I --> L
+    J --> L
+    K --> L
+    L --> M[Realize $130.00/mo Savings & Resolve Budget Threshold Alert]`
+      },
+      sources: ["gs://cloud-finops-vault-464514/finops_samples/gcp_active_assist_recommendations_sample.csv"]
+    };
+  }
   if (q.includes("chart") || q.includes("graph") || q.includes("breakdown") || q.includes("service") || q.includes("cost")) {
     return {
       answer: "Cost breakdown by Google Cloud Service (August 2026 MTD Net Spend: $214.39 USD):",
@@ -622,7 +651,6 @@ function getGcpLocalFallback(question) {
       sources: ["gs://cloud-finops-vault-464514/finops_samples/gcp_detailed_billing_export_sample.csv"]
     };
   }
-  if (q.includes("flowchart") || q.includes("diagram") || q.includes("mermaid") || q.includes("workflow") || q.includes("step")) {
     return {
       answer: "Google Cloud Active Assist Remediation & Rightsizing Workflow:",
       diagram: {
